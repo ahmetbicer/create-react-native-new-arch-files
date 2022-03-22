@@ -79,7 +79,7 @@ async function createFiles() {
 
 function downloadAndExtractFiles() {
 	const jniRoot = `${process.cwd()}/android/app/src/main/`;
-	const newArchRoot = `${process.cwd()}/android/app/src/main/java/com/${mainComponentName}/`;
+	const newArchRoot = `${process.cwd()}/android/app/src/main/java/${packageName.replace(/\./g, "/")}/`;
 
 	if (fs.existsSync(jniRoot + "jni")) {
 		console.log("JNI folder already exists. Please check", jniRoot + "jni");
