@@ -1,0 +1,18 @@
+{
+	"name": "create-react-native-new-arch-files",
+	"version": "1.0.0",
+	"description": "Helps creating new architecture files for react native.",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "",
+	"license": "MIT",
+	"private": true,
+	"bin": {
+		"create-react-native-new-arch-files": "./scripts/create-react-native-new-arch-files"
+	},
+	"dependencies": {
+		"replace-in-file": "^6.3.2"
+	}
+}
