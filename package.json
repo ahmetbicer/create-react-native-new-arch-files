@@ -1,6 +1,6 @@
 {
 	"name": "create-react-native-new-arch-files",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"description": "Helps creating new architecture files for react native.",
 	"exports": "./index.js",
 	"scripts": {
@@ -14,6 +14,7 @@
 		"create-react-native-new-arch-files": "./scripts/create-react-native-new-arch-files.js"
 	},
 	"dependencies": {
+		"glob": "^7.2.0",
 		"got": "^12.0.2",
 		"replace-in-file": "^6.3.2",
 		"tar": "^6.1.11"

@@ -3,6 +3,7 @@
 import { spawnSync } from "child_process";
 import replace from "replace-in-file";
 import readline from "readline";
+import glob from "glob";
 import tar from "tar";
 import got from "got";
 import fs from "fs";
@@ -24,7 +25,7 @@ const rl = readline.createInterface({
 	output: process.stdout,
 });
 
-let appName, packageName;
+let mainComponentName, packageName, reactNativeVersion;
 
 if (isGitDirty()) {
 	console.error("Your git working tree is dirty.");
@@ -43,15 +44,17 @@ function startSetup() {
 		process.exit(1);
 	}
 
-	const { name } = JSON.parse(fs.readFileSync(packageJSONPath));
+	const { dependencies } = JSON.parse(fs.readFileSync(packageJSONPath));
 
-	const defaultPackageName = `com.${name.toLowerCase()}`;
+	reactNativeVersion = dependencies["react-native"];
 
-	rl.question(`Package name? [${defaultPackageName}] `, function (userPackageName) {
+	const [defaultPackageName, defaultMainComponentName] = findPackageAndMainComponentName();
+
+	rl.question(`Package Name? [${defaultPackageName}] `, function (userPackageName) {
 		packageName = userPackageName || defaultPackageName;
 
-		rl.question(`App name? [${name}] `, function (userAppName) {
-			appName = userAppName || name;
+		rl.question(`Main Component Name? [${defaultMainComponentName}] `, function (userMainComponentName) {
+			mainComponentName = userMainComponentName || defaultMainComponentName;
 
 			rl.close();
 		});
@@ -61,22 +64,22 @@ function startSetup() {
 }
 
 async function createFiles() {
-	console.log("Downloading and extracting necessary files into android directory.");
-
 	await downloadAndExtractFiles();
 
 	replace.sync({
 		files: `${process.cwd()}/android/app/src/**`,
 		from: [/com\.rndiffapp/g, /rndiffapp/g],
-		to: [packageName, appName],
+		to: [packageName, mainComponentName],
 	});
 
-	console.log("New architecture files created 🎉");
+	console.log("New architecture files created 🎉\n");
+	console.log("But it doesn't end here. Go to react-native-upgrade-helper and make other changes.\n");
+	console.log(`https://react-native-community.github.io/upgrade-helper/?from=${reactNativeVersion}&to=0.68.0-rc.3`);
 }
 
 function downloadAndExtractFiles() {
 	const jniRoot = `${process.cwd()}/android/app/src/main/`;
-	const newArchRoot = `${process.cwd()}/android/app/src/main/java/com/${appName}/`;
+	const newArchRoot = `${process.cwd()}/android/app/src/main/java/com/${mainComponentName}/`;
 
 	if (fs.existsSync(jniRoot + "jni")) {
 		console.log("JNI folder already exists. Please check", jniRoot + "jni");
@@ -88,29 +91,51 @@ function downloadAndExtractFiles() {
 		process.exit(1);
 	}
 
+	console.log("Downloading and extracting necessary files into android directory.");
+
 	const stream = got.stream(
 		"https://codeload.github.com/ahmetbicer/create-react-native-new-arch-files/tar.gz/master"
 	);
 
 	const jniExtract = new Promise((resolve, reject) => {
-		stream.pipe(tar.extract({ cwd: jniRoot, strip: 2 }, ["create-react-native-new-arch-files-master/files/jni"]));
-		stream.on("end", function () {
+		const jniPipe = stream.pipe(
+			tar.extract({ cwd: jniRoot, strip: 2 }, ["create-react-native-new-arch-files-master/files/jni"])
+		);
+
+		jniPipe.on("finish", function () {
 			resolve();
 		});
 	});
 
 	const newArchExtract = new Promise((resolve, reject) => {
-		stream.pipe(
+		const newArchPipe = stream.pipe(
 			tar.extract({ cwd: newArchRoot, strip: 2 }, [
 				"create-react-native-new-arch-files-master/files/newarchitecture",
 			])
 		);
-		stream.on("end", function () {
+
+		newArchPipe.on("finish", function () {
 			resolve();
 		});
 	});
 
 	return Promise.all([jniExtract, newArchExtract]);
+}
+
+function findPackageAndMainComponentName() {
+	const [mainActivityFile] = glob.sync(`${process.cwd()}/android/**/MainActivity.java`);
+	const mainActivityString = fs.readFileSync(mainActivityFile).toString();
+
+	const packageNameRegex = /^package.*/;
+	const mainComponentNameRegex = /return ".*"/;
+
+	const [packageNameMatch] = mainActivityString.match(packageNameRegex);
+	const [mainComponentMatch] = mainActivityString.match(mainComponentNameRegex);
+
+	const [_, packageName] = packageNameMatch.replace(";", "").split(" ");
+	const [__, mainComponentName] = mainComponentMatch.replace(/"/g, "").split(" ");
+
+	return [packageName, mainComponentName];
 }
 
 function isGitDirty() {
