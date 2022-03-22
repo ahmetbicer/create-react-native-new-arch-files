@@ -2,15 +2,10 @@
 
 import { spawnSync } from "child_process";
 import replace from "replace-in-file";
-import { promisify } from "util";
 import readline from "readline";
-import { Stream } from "stream";
-import path from "path";
 import tar from "tar";
 import got from "got";
 import fs from "fs";
-
-const pipeline = promisify(Stream.pipeline);
 
 const help = process.argv.includes("-h") || process.argv.includes("--help");
 
@@ -70,8 +65,12 @@ function startSetup() {
 	rl.on("close", createFiles);
 }
 
-function createFiles() {
-	downloadAndExtractFiles();
+async function createFiles() {
+	console.log(
+		"Downloading and extracting necessary files into android directory."
+	);
+
+	await downloadAndExtractFiles();
 
 	replace.sync({
 		files: [`${process.cwd()}/android/app/src/main/**`],
@@ -84,57 +83,41 @@ function createFiles() {
 		from: [/rndiffapp/g],
 		to: appName,
 	});
+
+	console.log("New architecture files created 🎉");
 }
 
 function downloadAndExtractFiles() {
 	const jniRoot = `${process.cwd()}/android/app/src/main/`;
 	const newArchRoot = `${process.cwd()}/android/app/src/main/java/com/${appName}/`;
 
-	copyFolderRecursiveSync(
-		"/home/ahmetb/react_n/create-rn-new-architecture-files/files/jni/",
-		jniRoot
+	const stream = got.stream(
+		"https://codeload.github.com/ahmetbicer/create-react-native-new-arch-files/tar.gz/master"
 	);
 
-	copyFolderRecursiveSync(
-		"/home/ahmetb/react_n/create-rn-new-architecture-files/files/newarchitecture/",
-		newArchRoot
-	);
-}
-
-function copyFolderRecursiveSync(source, target) {
-	var files = [];
-
-	// Check if folder needs to be created or integrated
-	var targetFolder = path.join(target, path.basename(source));
-	if (!fs.existsSync(targetFolder)) {
-		fs.mkdirSync(targetFolder);
-	}
-
-	// Copy
-	if (fs.lstatSync(source).isDirectory()) {
-		files = fs.readdirSync(source);
-		files.forEach(function (file) {
-			var curSource = path.join(source, file);
-			if (fs.lstatSync(curSource).isDirectory()) {
-				copyFolderRecursiveSync(curSource, targetFolder);
-			} else {
-				copyFileSync(curSource, targetFolder);
-			}
+	const jniExtract = new Promise((resolve, reject) => {
+		stream.pipe(
+			tar.extract({ cwd: jniRoot, strip: 2 }, [
+				"create-react-native-new-arch-files-master/files/jni",
+			])
+		);
+		stream.on("end", function () {
+			resolve();
 		});
-	}
-}
+	});
 
-function copyFileSync(source, target) {
-	var targetFile = target;
+	const newArchExtract = new Promise((resolve, reject) => {
+		stream.pipe(
+			tar.extract({ cwd: newArchRoot, strip: 2 }, [
+				"create-react-native-new-arch-files-master/files/newarchitecture",
+			])
+		);
+		stream.on("end", function () {
+			resolve();
+		});
+	});
 
-	// If target is a directory, a new file with the same name will be created
-	if (fs.existsSync(target)) {
-		if (fs.lstatSync(target).isDirectory()) {
-			targetFile = path.join(target, path.basename(source));
-		}
-	}
-
-	fs.writeFileSync(targetFile, fs.readFileSync(source));
+	return Promise.all([jniExtract, newArchExtract]);
 }
 
 function isGitDirty() {
