@@ -6,7 +6,7 @@ This script helps creating **newly added** new architecture files for react nati
 
 ## How to run the script?
 
-Run this command in your project root directory. (WIP. This doesn't work yet.)
+Run this command in your project root directory.
 
 ```
 npx create-react-native-new-arch-files

@@ -39,9 +39,7 @@ function startSetup() {
 	const packageJsonExists = fs.existsSync(packageJSONPath);
 
 	if (!packageJsonExists) {
-		console.error(
-			"Couldn't find package.json. Are you sure you are in the right directory?"
-		);
+		console.error("Couldn't find package.json. Are you sure you are in the right directory?");
 		process.exit(1);
 	}
 
@@ -49,39 +47,28 @@ function startSetup() {
 
 	const defaultPackageName = `com.${name.toLowerCase()}`;
 
-	rl.question(
-		`Package name? [${defaultPackageName}] `,
-		function (userPackageName) {
-			packageName = userPackageName || defaultPackageName;
+	rl.question(`Package name? [${defaultPackageName}] `, function (userPackageName) {
+		packageName = userPackageName || defaultPackageName;
 
-			rl.question(`App name? [${name}] `, function (userAppName) {
-				appName = userAppName || name;
+		rl.question(`App name? [${name}] `, function (userAppName) {
+			appName = userAppName || name;
 
-				rl.close();
-			});
-		}
-	);
+			rl.close();
+		});
+	});
 
 	rl.on("close", createFiles);
 }
 
 async function createFiles() {
-	console.log(
-		"Downloading and extracting necessary files into android directory."
-	);
+	console.log("Downloading and extracting necessary files into android directory.");
 
 	await downloadAndExtractFiles();
 
 	replace.sync({
-		files: [`${process.cwd()}/android/app/src/main/**`],
-		from: [/com.rndiffapp/g],
-		to: packageName,
-	});
-
-	replace.sync({
-		files: [`${process.cwd()}/android/app/src/main/**`],
-		from: [/rndiffapp/g],
-		to: appName,
+		files: `${process.cwd()}/android/app/src/**`,
+		from: [/com\.rndiffapp/g, /rndiffapp/g],
+		to: [packageName, appName],
 	});
 
 	console.log("New architecture files created 🎉");
@@ -91,16 +78,22 @@ function downloadAndExtractFiles() {
 	const jniRoot = `${process.cwd()}/android/app/src/main/`;
 	const newArchRoot = `${process.cwd()}/android/app/src/main/java/com/${appName}/`;
 
+	if (fs.existsSync(jniRoot + "jni")) {
+		console.log("JNI folder already exists. Please check", jniRoot + "jni");
+		process.exit(1);
+	}
+
+	if (fs.existsSync(newArchRoot + "newarchitecture")) {
+		console.log("New architecture folder already exists. Please check", newArchRoot + "newarchitecture");
+		process.exit(1);
+	}
+
 	const stream = got.stream(
 		"https://codeload.github.com/ahmetbicer/create-react-native-new-arch-files/tar.gz/master"
 	);
 
 	const jniExtract = new Promise((resolve, reject) => {
-		stream.pipe(
-			tar.extract({ cwd: jniRoot, strip: 2 }, [
-				"create-react-native-new-arch-files-master/files/jni",
-			])
-		);
+		stream.pipe(tar.extract({ cwd: jniRoot, strip: 2 }, ["create-react-native-new-arch-files-master/files/jni"]));
 		stream.on("end", function () {
 			resolve();
 		});
