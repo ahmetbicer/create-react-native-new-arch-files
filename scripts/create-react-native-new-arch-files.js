@@ -40,27 +40,33 @@ if (isGitDirty()) {
 }
 
 function startSetup() {
-	const appJSON = JSON.parse(fs.readFileSync(process.cwd() + "/app.json"));
-	const packageJSON = JSON.parse(
-		fs.readFileSync(process.cwd() + "/package.json")
-	);
+	const packageJSONPath = process.cwd() + "/package.json";
+	const packageJsonExists = fs.existsSync(packageJSONPath);
 
-	const defaultAppName =
-		appJSON?.name || appJSON?.expo?.name || packageJSON.name || "MyApp";
+	if (!packageJsonExists) {
+		console.error(
+			"Couldn't find package.json. Are you sure you are in the right directory?"
+		);
+		process.exit(1);
+	}
 
-	const defaultPackageName = `com.${defaultAppName.toLowerCase()}`;
+	const { name } = JSON.parse(fs.readFileSync(packageJSONPath));
 
-	appName = defaultAppName;
-	packageName = defaultPackageName;
+	const defaultPackageName = `com.${name.toLowerCase()}`;
 
 	rl.question(
-		`App package name? [${defaultPackageName}] `,
+		`Package name? [${defaultPackageName}] `,
 		function (userPackageName) {
 			packageName = userPackageName || defaultPackageName;
 
-			rl.close();
+			rl.question(`App name? [${name}] `, function (userAppName) {
+				appName = userAppName || name;
+
+				rl.close();
+			});
 		}
 	);
+
 	rl.on("close", createFiles);
 }
 
@@ -69,13 +75,13 @@ function createFiles() {
 
 	replace.sync({
 		files: [`${process.cwd()}/android/app/src/main/**`],
-		from: [/com.rndiffapp/g, /rndiffapp/g, /RnDiffApp/g],
+		from: [/com.rndiffapp/g],
 		to: packageName,
 	});
 
 	replace.sync({
 		files: [`${process.cwd()}/android/app/src/main/**`],
-		from: [/rndiffapp/g, /RnDiffApp/g],
+		from: [/rndiffapp/g],
 		to: appName,
 	});
 }
