@@ -2,17 +2,20 @@
 	"name": "create-react-native-new-arch-files",
 	"version": "1.0.0",
 	"description": "Helps creating new architecture files for react native.",
-	"main": "index.js",
+	"exports": "./index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
+	"type": "module",
 	"author": "",
 	"license": "MIT",
 	"private": true,
 	"bin": {
-		"create-react-native-new-arch-files": "./scripts/create-react-native-new-arch-files"
+		"create-react-native-new-arch-files": "./scripts/create-react-native-new-arch-files.js"
 	},
 	"dependencies": {
-		"replace-in-file": "^6.3.2"
+		"got": "^12.0.2",
+		"replace-in-file": "^6.3.2",
+		"tar": "^6.1.11"
 	}
 }
