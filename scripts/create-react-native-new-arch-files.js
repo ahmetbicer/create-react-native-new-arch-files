@@ -74,7 +74,7 @@ async function createFiles() {
 
 	console.log("New architecture files created 🎉\n");
 	console.log("But it doesn't end here. Go to react-native-upgrade-helper and make other changes.\n");
-	console.log(`https://react-native-community.github.io/upgrade-helper/?from=${reactNativeVersion}&to=0.68.0-rc.3`);
+	console.log(`https://react-native-community.github.io/upgrade-helper/?from=${reactNativeVersion}&to=0.68.0`);
 }
 
 function downloadAndExtractFiles() {
