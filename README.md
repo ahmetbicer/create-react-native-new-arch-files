@@ -1,5 +1,3 @@
-# Work In Progress
-
 ## Create React Native New Arch Files
 
 This script helps creating **newly added** new architecture files for react native.
